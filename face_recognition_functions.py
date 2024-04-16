@@ -1,10 +1,33 @@
 import cv2
 from PIL import ImageTk, Image
-import tkinter as tk
+import face_recognition
+import os , sys
+import numpy
+import math
 
 
 
 class video:
+
+    images = []
+    classNames = []
+    encodeList = []
+    #listing images
+    path = 'people'
+    list = os.listdir(path)
+    print(list)
+    for cl in list:
+        curImg = cv2.imread(f'{path}/{cl}')
+        images.append(curImg)
+        classNames.append(os.path.splitext(cl)[0])
+    print(classNames)
+
+    #encoding all images
+    for img in images:
+        img = cv2.cvtColor(img, cv2.COLOR_BGR2RGB)
+        encode = face_recognition.face_encodings(img)[0]
+        encodeList.append(encode)
+    
 
     def __init__(self,root,video_label):
         self.root = root
@@ -31,9 +54,7 @@ class video:
             # Convert OpenCV image to PIL format
             rgb_img = cv2.cvtColor(frame_with_faces, cv2.COLOR_BGR2RGB)
             pil_img = Image.fromarray(rgb_img)
-            # Resize image to fit label
             resized_img = pil_img.resize((480, 360), Image.LANCZOS)
-            # Convert PIL image to Tkinter PhotoImage
             img_tk = ImageTk.PhotoImage(resized_img)
             # Update label with new image
             self.video_label[0].img = img_tk
@@ -41,7 +62,6 @@ class video:
         self.root.after(10, self.update)
 
     def video_stream(self):
-        # Open video stream (replace '0' with the index of your camera)
         self.cap = cv2.VideoCapture(0)
 
         if not self.cap.isOpened():
@@ -50,5 +70,4 @@ class video:
         
         
         
-        # Start updating video feed
         self.update()
