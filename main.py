@@ -1,6 +1,7 @@
 from PIL import ImageTk
 from customtkinter import *
 from face_recognition_functions import *
+import threading
 
 def update_log():
     try:
@@ -14,6 +15,8 @@ def update_log():
 
     finally:
         file.close()
+
+
 
 
 
@@ -58,6 +61,7 @@ video_label = []
 # label for displaying video
 video_label.append(CTkLabel(video_frame, text=''))
 video_label[0].grid(row=0 , column= 0, padx=50, pady=50)
+video_label[0].configure(image=img_empty_camera)
 video_label.append(CTkLabel(video_frame, text=''))
 video_label[1].grid(row=0 , column= 1, padx=50, pady=50)
 video_label[1].configure(image=img_empty_camera)
@@ -70,7 +74,11 @@ video_label[3].configure(image=img_empty_camera)
 
 # Start video streaming
 facedetector = video(root=root,video_label=video_label)
-facedetector.video_stream()
+facedetector.train()
+#make a thread for video streaming
+thread_video = threading.Thread(target=facedetector.video_stream, daemon=True)
+thread_video.start()
+
 
 root.mainloop()
 
