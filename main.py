@@ -1,7 +1,6 @@
 from PIL import ImageTk
 from customtkinter import *
-from face_recognition_functions import *
-import threading
+from CCTV import *
 
 def update_log():
     try:
@@ -16,7 +15,11 @@ def update_log():
     finally:
         file.close()
 
+def update_face_detection(value):
+    CCTV.face_detection = value
 
+def update_object_detection(value):
+    CCTV.object_detection = value
 
 
 
@@ -47,9 +50,12 @@ update_log_button = CTkButton(option_and_log_frame, text='Update Log', command=u
 update_log_button.pack(pady=20)
 # -------------------
 
-checkbox_face_detection = CTkCheckBox(option_and_log_frame,text='Face Detection',font=('',30))
+# when checkbox is checked then face detection is enabled
+checkbox_face_detection = CTkCheckBox(option_and_log_frame, text='Face Detection', font=('', 30), variable=BooleanVar(value=True))
+checkbox_face_detection.configure(command=lambda: update_face_detection(checkbox_face_detection.get()))
 checkbox_face_detection.pack(pady=40)
-checkbox_object_detection = CTkCheckBox(option_and_log_frame,text='Object Detection',font=('',30))
+checkbox_object_detection = CTkCheckBox(option_and_log_frame,text='Object Detection',font=('',30), variable=BooleanVar(value=True))
+checkbox_object_detection.configure(command=lambda: update_object_detection(checkbox_object_detection.get()))
 checkbox_object_detection.pack(pady=40)
 
 
@@ -61,23 +67,18 @@ video_label = []
 # label for displaying video
 video_label.append(CTkLabel(video_frame, text=''))
 video_label[0].grid(row=0 , column= 0, padx=50, pady=50)
-video_label[0].configure(image=img_empty_camera)
 video_label.append(CTkLabel(video_frame, text=''))
 video_label[1].grid(row=0 , column= 1, padx=50, pady=50)
-video_label[1].configure(image=img_empty_camera)
 video_label.append(CTkLabel(video_frame, text=''))
 video_label[2].grid(row=1 , column= 0, padx=50, pady=50)
-video_label[2].configure(image=img_empty_camera)
 video_label.append(CTkLabel(video_frame, text=''))
 video_label[3].grid(row=1 , column= 1, padx=50, pady=50)
-video_label[3].configure(image=img_empty_camera)
 
-# Start video streaming
-facedetector = video(root=root,video_label=video_label)
-facedetector.train()
-#make a thread for video streaming
-thread_video = threading.Thread(target=facedetector.video_stream, daemon=True)
-thread_video.start()
+# Create video instance and start video streaming in a separate thread
+CCTV = video(root,video_label,checkbox_face_detection._variable.get(),checkbox_object_detection._variable.get())
+CCTV.train()
+CCTV.video_stream()
+
 
 
 root.mainloop()
