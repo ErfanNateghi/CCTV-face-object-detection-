@@ -7,6 +7,7 @@ import time
 from customtkinter import *
 from ultralytics import YOLO
 import random
+import pickle
 
 
 
@@ -43,21 +44,38 @@ class video:
 
     #listing images and names
     def train(self):
-        # loading images
+        # loading images if they are not already loaded in encoding.pkl
+        try:
+            with open('encodings.pkl', 'rb') as f:
+                names_and_encoded_images = pickle.load(f)
+        except FileNotFoundError:
+            names_and_encoded_images = {}
         path = 'people'
         list = os.listdir(path)
         for cl in list:
             curImg = cv2.imread(f'{path}/{cl}')
+            name = os.path.splitext(cl)[0]
             self.images.append(curImg)
-            self.namelist.append(os.path.splitext(cl)[0])
+            if os.path.splitext(cl)[0] in names_and_encoded_images.keys(): # if in encoding.pkl skip the encoding
+                self.namelist.append(name)
+                self.encodeList.append(names_and_encoded_images[os.path.splitext(cl)[0]][0])
+                names_and_encoded_images[os.path.splitext(cl)[0]][1] = True
+            else: # if not in encoding.pkl encode the image
+                self.namelist.append(name)
+                small_image = cv2.resize(curImg, (0, 0), fx=0.25, fy=0.25)
+                img = cv2.cvtColor(small_image, cv2.COLOR_BGR2RGB)
+                encode = face_recognition.face_encodings(img)[0]
+                self.encodeList.append(encode)
+                names_and_encoded_images[name] = [encode,True]
 
-        #encoding all images
-        for img in self.images:
-            small_image = cv2.resize(img, (0, 0), fx=0.25, fy=0.25)
-            img = cv2.cvtColor(small_image, cv2.COLOR_BGR2RGB)
-            encode = face_recognition.face_encodings(img)[0]
-            self.encodeList.append(encode)
-        names_and_encoded_images = dict(zip(self.namelist,self.encodeList))
+        # make a copy of dic to remove false flags
+        updated_names_and_encoded_images = {name:[encode,flag] for (name, [encode, flag]) in names_and_encoded_images.items() if flag == True}
+        for name in updated_names_and_encoded_images.keys():
+            updated_names_and_encoded_images[name][1] = False # initialize flag to false
+        # Save encodings and names to a file for later use
+        with open('encodings.pkl', 'wb') as f:
+            pickle.dump(updated_names_and_encoded_images, f)
+
 
         # Load YOLOv8 model
         self.my_file = open("object_list/objects.txt", "r")
@@ -188,7 +206,7 @@ class video:
             self.video_label[i].configure(image=img_tk)
             
         
-            
+        
         self.root.after(1,self.update,i)
 
     def video_stream(self):
@@ -201,7 +219,3 @@ class video:
     
 
                 
-
-        
-        
-        
