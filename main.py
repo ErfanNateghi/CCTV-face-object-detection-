@@ -1,8 +1,10 @@
 from customtkinter import *
 from CCTV import *
-from tkinter import filedialog , Label ,PhotoImage, Canvas
-from PIL import Image , ImageTk
+from tkinter import filedialog
+from PIL import Image
 import CTkListbox
+import shutil
+from tkinter import messagebox
 
 
 default_image_path = None
@@ -45,15 +47,68 @@ def image_save():
     if final_image_save_path != None:
         image_sc.save_image(final_image_save_path)
 
+def add_person_image_load():
+    image_path = filedialog.askopenfilename(initialdir="/", title="Select an image", filetypes=([("Image Files", "*.jpg; *.png")]))
+    Image.open(image_path)
+    person_label.configure(image=CTkImage(Image.open(image_path),size=(400,300)))
+    add_person_image_path_label.configure(text=image_path)
+
+def add_person():
+    first_name = first_name_entry.get()
+    last_name = last_name_entry.get()
+    image_path = add_person_image_path_label._text
+    if first_name != '' and last_name != '' and  image_path != '':
+        # first letter of first name and last name should be uppercase
+        name = first_name.capitalize() + ' ' + last_name.capitalize()
+        # copy image from image path to people folder with their name
+        image_name = name + '.jpg'
+        shutil.copy(image_path, 'people/' + image_name)
+        # update people listbox
+        people_listbox.insert('end', name)
+
+def select_person(event):
+    person_name = event.widget.get(event.widget.curselection())
+    first_name = person_name.split(' ')[0]
+    last_name = person_name.split(' ')[1]
+    image_path = 'people/' + person_name + '.jpg'
+    person_label.configure(image=CTkImage(Image.open(image_path),size=(400,300)))
+    add_person_image_path_label.configure(text=image_path)
+    first_name_entry.delete(0, 'end')
+    first_name_entry.insert(0, first_name)
+    last_name_entry.delete(0, 'end')
+    last_name_entry.insert(0, last_name)
+
+def remove_person():
+    name = first_name_entry.get() + ' ' + last_name_entry.get()
+    
+    try:
+        # delete the item in the listbox with this name
+        people_listbox.delete(people_listbox.get(ALL).index(name))
+        # clear the entries
+        first_name_entry.delete(0, 'end')
+        last_name_entry.delete(0, 'end')
+        person_label.configure(image=CTkImage(Image.open('noImage.jpg'),size=(400,300)))
+        # delete the image file in the people folder
+        image_name = name + '.jpg'
+        os.remove('people/' + image_name)
+    except Exception:
+        messagebox.showerror("Error", "There is no person with this name")
+
+
+window_width = 1920
+window_height = 1080
 
 root = CTk()
-root.geometry('1920x1080')
+root.geometry(str(window_width) + 'x' + str(window_height))
 root.minsize(800, 600)
 root.title("CCTV AI")
 
+print(root.winfo_width(), root.winfo_height())
 img_empty_camera = CTkImage(Image.open('emptyCamera3.png'),size=(root.winfo_width()*2,root.winfo_width()*1.5))
 no_image = CTkImage(Image.open('noImage.jpg'),size=(root.winfo_width()*3,root.winfo_width()*2.25))
 no_image_size = (root.winfo_width()*3,root.winfo_width()*2.25)
+no_image_tab3 = CTkImage(Image.open('noImage.jpg'),size=(root.winfo_width()*2,root.winfo_width()*1.5))
+
 
 
 # create a notebook for tabs
@@ -165,7 +220,59 @@ people_label.pack()
 info_listbox_objects = CTkListbox.CTkListbox(objects_frame, width=100, height=400, font=('', 20), fg_color='#1B1B1B', bg_color='#1B1B1B')
 info_listbox_objects.pack( fill= 'both', expand=True)
 
+
+# tab3 (add person and remove person)
 #------------------------------------------------------------------------------------------------------------------------
+main_add_person_frame = CTkFrame(tab3, bg_color='#2B2B2B', fg_color='#1B1B1B',corner_radius=50,width=1200, height=800)
+main_add_person_frame.pack(padx=30, pady=30, )
+# frame for image, add , remove
+image_add_remove_frame = CTkFrame(main_add_person_frame,fg_color='#1B1B1B')
+image_add_remove_frame.pack(side='left',padx=(50,0), pady=50)
+# label for showing the pendding person
+person_label = CTkLabel(image_add_remove_frame, text='', font=('', 20) , width=400, height=250, corner_radius=20, image=no_image_tab3)
+person_label.pack(pady=20,padx=30, side='top')
+
+frame_add_delete_person = CTkFrame(image_add_remove_frame,fg_color='#1B1B1B')
+frame_add_delete_person.pack(pady=20,padx=30, anchor= 's', side='bottom')
+
+add_person_botton = CTkButton(frame_add_delete_person, text='Add Person', font=('', 20), width=200, height=50, corner_radius=20,command=add_person)
+add_person_botton.pack(pady=20,padx=30, side = 'right')
+
+delete_person_botton = CTkButton(frame_add_delete_person, text='Remove Person', font=('', 20), width=200, height=50, corner_radius=20,command=remove_person)
+delete_person_botton.pack(pady=20,padx=30, side = 'left')
+
+# frame for entering person first name and last name
+person_info_frame = CTkFrame(main_add_person_frame,fg_color='#1B1B1B')
+person_info_frame.pack(padx=(0,30),pady=50, fill="both",expand=True , side='right')
+# a label and entry for first name and last name plus a buttons for image path and a label for image path
+Fname_Lname_frame = CTkFrame(person_info_frame,fg_color='#1B1B1B')
+Fname_Lname_frame.pack(pady=20,anchor="center", side='left')
+
+first_name_label = CTkLabel(Fname_Lname_frame, text='First Name:', font=('', 30))
+first_name_label.pack(pady=20,padx=30, anchor= 'w')
+first_name_entry = CTkEntry(Fname_Lname_frame, font=('', 25),width=200,height=50)
+first_name_entry.pack(pady=(0,20),padx=30, anchor= 'w')
+
+last_name_label = CTkLabel(Fname_Lname_frame, text='Last Name:', font=('', 30))
+last_name_label.pack(pady=20,padx=30, anchor= 'w')
+last_name_entry = CTkEntry(Fname_Lname_frame, font=('', 25),width=200,height=50)
+last_name_entry.pack(pady=(0,20),padx=30, anchor= 'w')
+
+add_person_image_path_button = CTkButton(Fname_Lname_frame, text='Image Path', font=('', 20), width=200, height=50, corner_radius=20,command=lambda: add_person_image_load())
+add_person_image_path_button.pack(pady=20,padx=30, anchor= 'w')
+add_person_image_path_label = CTkLabel(Fname_Lname_frame, text='', font=('', 10),fg_color='#2B2B2B' ,width=400, height=50, corner_radius=20)
+add_person_image_path_label.pack(pady=(0,20),padx=30, anchor= 'w',expand=True)
+
+people_listbox = CTkListbox.CTkListbox(person_info_frame, width=200, height=400, font=('', 30), fg_color='#1B1B1B', bg_color='#1B1B1B')
+people_listbox.pack(side='right')
+for i in os.listdir('people'):
+    people_listbox.insert('end',i.split('.')[0])
+people_listbox.bind('<<ListboxSelect>>', select_person)
+    
+
+
+#------------------------------------------------------------------------------------------------------------------------
+
 # Create video instance and start video streaming
 CCTV = video(root,video_label,checkbox_face_detection._variable.get(),checkbox_object_detection._variable.get())
 CCTV.train()
