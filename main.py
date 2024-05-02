@@ -5,6 +5,7 @@ from PIL import Image
 import CTkListbox
 import shutil
 from tkinter import messagebox
+import webbrowser
 
 
 default_image_path = None
@@ -55,35 +56,49 @@ def GUI_APP():
 
     def insert_image(no_image_size):
         global default_image_path
-        default_image_path = filedialog.askopenfilename(initialdir="/", title="Select an image",
+        
+        try:
+            temp = filedialog.askopenfilename(initialdir="/", title="Select an image",
                                             filetypes=( [("Image Files", "*.jpg; *.png")]))
-        if default_image_path != None:
-            image_label_insert.configure(image=CTkImage(Image.open(default_image_path),size=(no_image_size[0],no_image_size[1])))
+            if temp != '':
+                default_image_path = temp
+                image_label_insert.configure(image=CTkImage(Image.open(default_image_path),size=(no_image_size[0],no_image_size[1])))
+        except Exception:
+            pass
 
     def image_save():
         final_image_save_path = filedialog.asksaveasfile(mode='w', defaultextension=".png",filetypes=(("JPEG file", "*.jpg"),("PNG file", "*.png"),("All Files", "*.*")),title="Where do you want to save your image?")
 
-        if final_image_save_path != None:
+        if final_image_save_path != '':
             image_sc.save_image(final_image_save_path)
 
     def add_person_image_load():
-        image_path = filedialog.askopenfilename(initialdir="/", title="Select an image", filetypes=([("Image Files", "*.jpg; *.png")]))
-        Image.open(image_path)
-        person_label.configure(image=CTkImage(Image.open(image_path),size=(window_width/4.8,window_height/3.6)))
-        add_person_image_path_label.configure(text=image_path)
+        try:
+            image_path = filedialog.askopenfilename(initialdir="/", title="Select an image", filetypes=([("Image Files", "*.jpg; *.png")]))
+            print(image_path)
+            if image_path != '':
+                print('nani')
+                Image.open(image_path)
+                person_label.configure(image=CTkImage(Image.open(image_path),size=(window_width/4.8,window_height/3.6)))
+                add_person_image_path_label.configure(text=image_path)
+        except Exception:
+            pass
 
     def add_person():
         first_name = first_name_entry.get()
         last_name = last_name_entry.get()
         image_path = add_person_image_path_label._text
-        if first_name != '' and last_name != '' and  image_path != '':
-            # first letter of first name and last name should be uppercase
-            name = first_name.capitalize() + ' ' + last_name.capitalize()
-            # copy image from image path to people folder with their name
-            image_name = name + '.jpg'
-            shutil.copy(image_path, 'people/' + image_name)
-            # update people listbox
-            people_listbox.insert('end', name)
+        try:
+            if first_name != '' and last_name != '' and  image_path != '':
+                # first letter of first name and last name should be uppercase
+                name = first_name.capitalize() + ' ' + last_name.capitalize()
+                # copy image from image path to people folder with their name
+                image_name = name + '.jpg'
+                shutil.copy(image_path, 'people/' + image_name)
+                # update people listbox
+                people_listbox.insert('end', name)
+        except shutil.SameFileError:
+            messagebox.showinfo('Info','This person already exist as a known person!')
 
     def select_person(event):
         person_name = event.widget.get(event.widget.curselection())
@@ -151,7 +166,7 @@ def GUI_APP():
     tab1 = tabControl.add('    CCTV    ')
     tab2 = tabControl.add(' Image Scanner ')
     tab3 = tabControl.add(' Add Person ')
-    tab4 = tabControl.add(' display settings ')
+    tab4 = tabControl.add(' Display Settings ')
     tab5 = tabControl.add(' About ')
     tabControl._segmented_button.configure( height=window_height/21.6,font=('Arial',window_width/64))
 
@@ -163,20 +178,24 @@ def GUI_APP():
     option_and_log_frame = CTkFrame(tab1,fg_color='#1B1B1B',width=window_width/4.8, height=window_height/2.16)
     option_and_log_frame.pack(fill="both", side='right')
 
-    log_textbox = CTkTextbox(option_and_log_frame, width=window_width/6.4, height= window_height/2.7)
+    log_textbox = CTkTextbox(option_and_log_frame, width=window_width/6.4, height= window_height/2.7,font=('', window_width/120))
     log_textbox.pack(anchor='s', padx=window_width/64, pady=window_height/36 )
 
     update_log_button = CTkButton(option_and_log_frame, text='Update Log', command=update_log,font=('',window_width/64),width=window_width/9.6,height=window_height/21.6,corner_radius=window_width/96)
     update_log_button.pack(pady=window_height/54)
     # -------------------
 
-    # when checkbox is checked then face detection is enabled
-    checkbox_face_detection = CTkCheckBox(option_and_log_frame, text='Face Detection', font=('', window_width/64), variable=BooleanVar(value=True))
+    #frame for 2 swithches
+    switches_frame = CTkFrame(option_and_log_frame,fg_color='#1B1B1B',width=window_width/6.4, height=window_height/2.16)
+    switches_frame.pack(anchor='s')
+
+    # when switches is checked then face detection is enabled
+    checkbox_face_detection = CTkSwitch(switches_frame, text='  Face Detection', font=('', window_width/64), variable=BooleanVar(value=True),switch_width=int(window_width/38.4),switch_height=int(window_height/38.4))
     checkbox_face_detection.configure(command=lambda: update_face_detection(checkbox_face_detection.get()))
-    checkbox_face_detection.pack(pady=window_height/27)
-    checkbox_object_detection = CTkCheckBox(option_and_log_frame,text='Object Detection',font=('',window_width/64), variable=BooleanVar(value=True))
+    checkbox_face_detection.pack(pady=window_height/27,anchor='w')
+    checkbox_object_detection = CTkSwitch(switches_frame,text='  Object Detection',font=('',window_width/64), variable=BooleanVar(value=True),switch_width=int(window_width/38.4),switch_height=int(window_height/38.4))
     checkbox_object_detection.configure(command=lambda: update_object_detection(checkbox_object_detection.get()))
-    checkbox_object_detection.pack(pady=window_height/27)
+    checkbox_object_detection.pack(pady=window_height/27,anchor='w')
 
 
     # frame for video
@@ -222,9 +241,9 @@ def GUI_APP():
     insert_button = CTkButton(insert_button_frame, text='Insert Image', font=('', window_width/64), width=window_width/9.6, height=window_height/21.6, corner_radius=window_width/96,command=lambda: insert_image(no_image_size))
     insert_button.pack(pady=window_height/27)
     # 2 switch for scan mode (face and object detection)
-    face_detection_switch = CTkSwitch(scan_options_frame, text='Face Detection', font=('', window_width/64), variable=BooleanVar(value=True),command=lambda: update_face_detection_image(face_detection_switch.get()))
+    face_detection_switch = CTkSwitch(scan_options_frame, text='  Face Detection', font=('', window_width/64), variable=BooleanVar(value=True),command=lambda: update_face_detection_image(face_detection_switch.get()),switch_width=int(window_width/38.4),switch_height=int(window_height/38.4))
     face_detection_switch.pack(pady=window_height/27 , anchor='w')
-    object_detection_switch = CTkSwitch(scan_options_frame, text='Object Detection', font=('', window_width/64), variable=BooleanVar(value=True),command=lambda: update_object_detection_image(object_detection_switch.get()))
+    object_detection_switch = CTkSwitch(scan_options_frame, text='  Object Detection', font=('', window_width/64), variable=BooleanVar(value=True),command=lambda: update_object_detection_image(object_detection_switch.get()),switch_width=int(window_width/38.4),switch_height=int(window_height/38.4))
     object_detection_switch.pack(pady=(window_height/54,window_height/27),anchor='w')
 
     # split the frame into two (scan button and scan image , image information listbox)
@@ -235,9 +254,9 @@ def GUI_APP():
     image_info_frame.pack( padx=window_width/64,anchor="s",fill='both',expand=True, side='right')
 
     # button for scan image
-    scan_button = CTkButton(save_scan_frame, text='Scan Image', font=('', window_width/64), width=window_width/9.6, height=window_height/21.6, corner_radius=window_width/96,command=lambda: image_sc.scan(default_image_path))
+    scan_button = CTkButton(save_scan_frame, text='Scan Image', font=('', window_width/64), width=window_width/9.6, height=window_height/21.6, corner_radius=window_width/96,command=lambda: image_sc.scan(default_image_path) if default_image_path!=None else None)
     scan_button.pack(pady=window_height/54, anchor='center')
-    save_image_button = CTkButton(save_scan_frame, text='Save Image', font=('', window_width/64), width=window_width/9.6, height=window_height/21.6, corner_radius=window_width/96,fg_color='green',command=image_save)
+    save_image_button = CTkButton(save_scan_frame, text='Save Image', font=('', window_width/64), width=window_width/9.6, height=window_height/21.6, corner_radius=window_width/96,fg_color='green',hover_color='#2E8B57',command=image_save)
     save_image_button.pack(pady=window_height/54, anchor='center')
 
     # list box for image information
@@ -247,6 +266,7 @@ def GUI_APP():
     people_label.pack()
     info_listbox_people = CTkListbox.CTkListbox(people_frame, width=window_width/19.2, height=window_height/2.7, font=('', window_width/96), fg_color='#1B1B1B', bg_color='#1B1B1B')
     info_listbox_people.pack(fill= 'both', expand=True)
+    info_listbox_people.configure(font=('',window_width/96))
 
     objects_frame = CTkFrame(image_info_frame,fg_color='#1B1B1B')
     objects_frame.pack(pady=window_height/54,anchor="s", fill="both",expand=True , side='right')
@@ -254,6 +274,7 @@ def GUI_APP():
     people_label.pack()
     info_listbox_objects = CTkListbox.CTkListbox(objects_frame, width=window_width/19.2, height=window_height/2.7, font=('', window_width/96), fg_color='#1B1B1B', bg_color='#1B1B1B')
     info_listbox_objects.pack( fill= 'both', expand=True)
+    info_listbox_objects.configure(font=('',window_width/96))
 
 
     # tab3 (add person and remove person)
@@ -270,10 +291,10 @@ def GUI_APP():
     frame_add_delete_person = CTkFrame(image_add_remove_frame,fg_color='#1B1B1B')
     frame_add_delete_person.pack(pady=window_height/54,padx=window_width/64, anchor= 's', side='bottom')
 
-    add_person_botton = CTkButton(frame_add_delete_person, text='Add Person', font=('', window_width/96), width=window_width/9.6, height=window_height/21.6, corner_radius=window_width/96,command=add_person, fg_color='green')
+    add_person_botton = CTkButton(frame_add_delete_person, text='Add Person', font=('', window_width/96), width=window_width/9.6, height=window_height/21.6, corner_radius=window_width/96,command=add_person, fg_color='green',hover_color='#2E8B57')
     add_person_botton.pack(pady=window_height/54,padx=window_width/64, side = 'right')
 
-    delete_person_botton = CTkButton(frame_add_delete_person, text='Remove Person', font=('', window_width/96), width=window_width/9.6, height=window_height/21.6, corner_radius=window_width/96,command=remove_person, fg_color='red')
+    delete_person_botton = CTkButton(frame_add_delete_person, text='Remove Person', font=('', window_width/96), width=window_width/9.6, height=window_height/21.6, corner_radius=window_width/96,command=remove_person, fg_color='#8B0000',hover_color='red')
     delete_person_botton.pack(pady=window_height/54,padx=window_width/64, side = 'left')
 
     # frame for entering person first name and last name
@@ -298,12 +319,12 @@ def GUI_APP():
     add_person_image_path_label = CTkLabel(Fname_Lname_frame, text='', font=('', window_width/192),fg_color='#2B2B2B' ,width=window_width/4.8, height=window_height/21.6, corner_radius=window_width/96)
     add_person_image_path_label.pack(pady=(0,window_height/54),padx=window_width/64, anchor= 'w',expand=True)
 
-    people_listbox = CTkListbox.CTkListbox(person_info_frame, width=window_width/9.6, height=window_height/2.7, font=('', window_width/64), fg_color='#1B1B1B', bg_color='#1B1B1B')
+    people_listbox = CTkListbox.CTkListbox(person_info_frame, width=window_width/9.6, height=window_height/2.7, fg_color='#1B1B1B', bg_color='#1B1B1B')
     people_listbox.pack(side='right')
     for i in os.listdir('people'):
         people_listbox.insert('end',i.split('.')[0])
     people_listbox.bind('<<ListboxSelect>>', select_person)
-
+    people_listbox.configure(font=('',window_width/96))
 
     # tab4 (display setting)
     #------------------------------------------------------------------------------------------------------------------------
@@ -334,7 +355,35 @@ def GUI_APP():
 
 
     #------------------------------------------------------------------------------------------------------------------------
+    about_main_frame = CTkFrame(tab5,  width=window_width/3,height=window_height/2.16, corner_radius=window_width/38.4)
+    about_main_frame.pack(anchor='center')
+    about_text = """
+A project by Erfan Nateghi, showcase 
+advanced skills in computer vision and video 
+streaming technologies. Leveraging YOLOv8
+and Computer Vision algorithms, this 
+program marks objects and faces in 
+real-time for enhanced security and analysis.
+Additionally, the project includes
+functionality to convert images to scanned
+images and allows users to add known
+individuals for personalized recognition 
+and authentication.
 
+GitHub
+"""
+    github_link = ' https://github.com/ErfanNateghi'
+    about_textbox = CTkTextbox(about_main_frame,font=('Serif fonts',window_width/76.8),width=window_width/3, height=window_height/1.6,corner_radius=window_width/38.4)
+    about_textbox.tag_config('center', justify='center')
+    about_textbox.tag_add('center', '1.0', 'end')
+    about_textbox.insert('end', about_text, 'center')
+    about_textbox.insert('end', github_link, 'link')
+    about_textbox.configure(state='disabled')
+    about_textbox.tag_config('link', foreground="#68A0CF",justify='center')
+    about_textbox.tag_bind('link', '<Button-1>', lambda link: webbrowser.open_new_tab('https://github.com/ErfanNateghi'))
+    about_textbox.pack(fill='both',expand=True)
+
+    #------------------------------------------------------------------------------------------------------------------------
     # Create video instance and start video streaming
     CCTV = video(root,video_label,checkbox_face_detection._variable.get(),checkbox_object_detection._variable.get())
     CCTV.train()
