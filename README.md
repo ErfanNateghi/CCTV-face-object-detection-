@@ -44,11 +44,11 @@ The graphical user interface (GUI) is built using **CustomTkinter**, providing a
 
 ## YOLOv8 Model
 
-The application uses the YOLOv8 model for object detection. Ensure the model weights are correctly placed in the `models` directory. You can download the weights from the official YOLOv8 GitHub repository.
+The application uses the YOLOv8 model for object detection. You can download the weights from the official YOLOv8 GitHub repository.
 
 ## Logs
 
-All logs are stored in the `logs` directory. Each log entry includes:
+All logs are stored in the `log`. Each log entry includes:
 
 - **Timestamp:** When the face/object was detected.
 - **Face/Object Details:** Information about the detected face or object.
